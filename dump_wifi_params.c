@@ -1,9 +1,18 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include <stdint.h>
 
-int main(int argc, char **argv)
+#include "args_check.h"
+
+int main(int argc, uint8_t **argv)
 {
-	printf("Hello world!");
+    int retval = 0;
 
-    return 0;
+    /* We don't want argv[0] which represents name of the program */
+    retval = args_check(argc - 1, argv + 1);
+    if (retval)
+        return retval;
 }
 
