@@ -6,7 +6,7 @@
 
 #include "args_check.h"
 
-int main(int argc, uint8_t **argv)
+int main(int argc, char **argv)
 {
     int retval = 0;
 
