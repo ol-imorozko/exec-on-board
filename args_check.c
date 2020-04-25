@@ -8,9 +8,7 @@
 static int  possible_types_count = 1;
 static char *possible_types[] = {"IAD731"};
 
-/**
- * Print possible board type names.
- */
+/** Print possible board type names. */
 static void possible_types_print(void)
 {
     int i;
@@ -39,8 +37,6 @@ static void usage_print(void)
 /**
  * Check if board type is correct.
  *
- * @param  board_type   String with board type
- *
  * @return
  *      Zero on success, or -1, if error occurred.
  */
@@ -59,8 +55,6 @@ static int board_type_check(char *board_type)
 
 /**
  * Check if ipv4 address is correct.
- *
- * @param  board_type   String with ip address
  *
  * @return
  *      Zero on success, or -1, if error occurred.
@@ -100,14 +94,11 @@ static int ipv4_check(char *ip)
 /**
  * Check if arguments passed to dump_wifi_params are valid.
  *
- * @param  args_count   Count of arguments
- * @param  args         Array of arguments
- *
  * @return
  *      Zero on success, or -1, if error occurred.
  *
  * @se
- *      Prints information about occurred error to standart output.
+ *      Prints information about occurred error to stderr.
  *
  * @todo
  *      Add whitespace support in password?
