@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "telnet_remote_control.h"
 
@@ -10,7 +11,7 @@
 #define STANDARD_USERNAME   "admin"
 #define STANDARD_PASSWORD   "admin"
 #define TELNET_PORT         23
-#define RECV_BUFF_SIZE      1000
+#define RECV_BUFF_SIZE      10000
 #define CMD_BUFF_SIZE       1000
 #define TIMEOUT             3
 
@@ -61,7 +62,7 @@ static int tcp_fill_conn_info(tcp_conn_info *ret, char *ip_addr)
     return 0;
 }
 
-/** Free allocated memory for 'data'. */
+/** Free allocated memory and close socket for 'data'. */
 void telnet_free_auth_data(telnet_auth_data *data)
 {
     free(data->tcp_conn.dst_addr);
@@ -69,6 +70,7 @@ void telnet_free_auth_data(telnet_auth_data *data)
     free(data->username);
     free(data->password);
     free(data->exec_cmd);
+    close(data->tcp_conn.fd);
 }
 
 /**
@@ -96,14 +98,14 @@ int telnet_fill_auth_data(telnet_auth_data *ret, char *ip_addr,
     if (retval)
         goto cleanup;
 
-    ret->recv_buff = malloc(RECV_BUFF_SIZE);
+    ret->recv_buff = calloc(RECV_BUFF_SIZE, sizeof(char));
     if (!ret->recv_buff)
     {
         perror("Could not allocate memory for receive buffer\n");
         goto cleanup;
     }
 
-    ret->exec_cmd = malloc(CMD_BUFF_SIZE);
+    ret->exec_cmd = calloc(CMD_BUFF_SIZE, sizeof(char));
     if (!ret->recv_buff)
     {
         perror("Could not allocate memory for execution command\n");
@@ -162,16 +164,16 @@ static int telnet_recv_specific_str(telnet_auth_data *data, char *expected)
     tv.tv_sec = TIMEOUT;
     tv.tv_usec = 0;
 
+    retval = setsockopt(data->tcp_conn.fd, SOL_SOCKET, SO_RCVTIMEO,
+                       (char *)&tv, sizeof(tv));
+    if (retval)
+    {
+        perror("Could not set socket option\n");
+        return retval;
+    }
+
     while (1)
     {
-        retval = setsockopt(data->tcp_conn.fd, SOL_SOCKET, SO_RCVTIMEO,
-                            (char *)&tv, sizeof(tv));
-        if (retval)
-        {
-            perror("Could not set socket option\n");
-            break;
-        }
-
         retval = recv(data->tcp_conn.fd, data->recv_buff, RECV_BUFF_SIZE, 0);
         if (retval == -1)
         {
@@ -179,15 +181,19 @@ static int telnet_recv_specific_str(telnet_auth_data *data, char *expected)
             break;
         }
 
-
-        if(strstr(data->recv_buff, expected) != NULL)
-            return 0;
-
         if(strstr(data->recv_buff, "incorrect") != NULL)
         {
             fprintf(stderr, "Login or password is incorrect\n");
             return -1;
         }
+
+        if(strstr(data->recv_buff, expected) != NULL)
+        {
+            memset(data->recv_buff, 0, retval);
+            return 0;
+        }
+
+        memset(data->recv_buff, 0, retval);
     }
 
     return retval;
@@ -224,7 +230,7 @@ static int telnet_send_str(telnet_auth_data *data, send_str_variants v)
             break;
     }
 
-    retval = send(data->tcp_conn.fd, send_str, sizeof(send_str), 0);
+    retval = send(data->tcp_conn.fd, send_str, strlen(send_str), 0);
     if (retval == -1)
     {
         perror("Could not send data to server\n");
