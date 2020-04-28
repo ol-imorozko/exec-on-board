@@ -7,8 +7,8 @@
 #include "args_check.h"
 #include "telnet_remote_control.h"
 
-//error while filling.... print errors to stdout.
-//all other erors should be printed to stderr!
+/* TODO: error while filling.... print errors to stdout.
+all other erors should be printed to stderr! */
 int main(int argc, char **argv)
 {
     int retval = 0;
@@ -19,13 +19,16 @@ int main(int argc, char **argv)
     if (retval)
         return retval;
 
-    retval = telnet_fill_auth_data(&board_control_data, NULL);
+    retval = telnet_fill_auth_data(&board_control_data, NULL, NULL, NULL);
     if (retval)
         return retval;
 
-    retval = telnet_auth(&board_control_data);
+    retval = telnet_auth(&board_control_data, "login:", "Password:");
+    printf("retval - %d\n", retval);
     if (retval)
         return retval;
+
+    telnet_free_auth_data(&board_control_data);
 
     return retval;
 }
