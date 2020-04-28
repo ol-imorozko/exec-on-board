@@ -8,7 +8,7 @@
 
 #define STANDARD_IP_ADDR    "192.168.1.1"
 #define STANDARD_USERNAME   "admin"
-#define STANDARD_PASSWORD   "1admin"
+#define STANDARD_PASSWORD   "admin"
 #define TELNET_PORT         23
 #define RECV_BUFF_SIZE      1000
 #define CMD_BUFF_SIZE       1000
@@ -179,9 +179,15 @@ static int telnet_recv_specific_str(telnet_auth_data *data, char *expected)
             break;
         }
 
-        printf("received data:\n%s\n expected string:%s\n", data->recv_buff, expected);
+
         if(strstr(data->recv_buff, expected) != NULL)
             return 0;
+
+        if(strstr(data->recv_buff, "incorrect") != NULL)
+        {
+            fprintf(stderr, "Login or password is incorrect\n");
+            return -1;
+        }
     }
 
     return retval;
@@ -242,42 +248,45 @@ static int telnet_send_str(telnet_auth_data *data, send_str_variants v)
  *      The string we are waiting from the server,
  *      so we can enter password.
  *
+ * @param   expected_auth_responce
+ *      The string we are waiting from the server
+ *      after successful authentication.
+ *
  * @return
  *      Zero on success, or -1, if error occurred.
  *
  */
 int telnet_auth(telnet_auth_data *data,
                 char *expected_login_responce,
-                char *expected_password_responce)
+                char *expected_password_responce,
+                char *expected_auth_responce)
 {
     int retval;
 
-    printf("step 1\n");
     retval = tcp_connection_establish(&data->tcp_conn);
     if(retval)
         return retval;
 
-    printf("step 2\n");
     retval = telnet_recv_specific_str(data, expected_login_responce);
     if(retval)
         return retval;
 
-    printf("step 3\n");
     retval = telnet_send_str(data, USERNAME);
     if(retval)
         return retval;
 
-    printf("step 4\n");
     retval = telnet_recv_specific_str(data, expected_password_responce);
     if(retval)
         return retval;
 
-    printf("step 5\n");
     retval = telnet_send_str(data, PASSWORD);
     if(retval)
         return retval;
 
-    printf("step 6\n");
+    retval = telnet_recv_specific_str(data, expected_auth_responce);
+    if(retval)
+        return retval;
+
     return retval;
 }
 
@@ -296,8 +305,6 @@ int telnet_execute_command(telnet_auth_data *data,
                            char *expected_responce)
 {
     int retval;
-
-    printf("Command to execute: %s", data->exec_cmd);
 
     retval = telnet_send_str(data, COMMAND);
     if(retval)

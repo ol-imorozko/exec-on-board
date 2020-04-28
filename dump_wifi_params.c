@@ -23,8 +23,7 @@ int main(int argc, char **argv)
     if (retval)
         return retval;
 
-    retval = telnet_auth(&board_control_data, "login:", "Password:");
-    printf("retval - %d\n", retval);
+    retval = telnet_auth(&board_control_data, "login:", "Password:", "root@ugwcpe:~#");
     if (retval)
         return retval;
 
