@@ -18,10 +18,10 @@
 /** create AF_INET, SOCK_STREAM socket */
 static int socket_create(void)
 {
-    int fd;
+    int sock;
 
-    fd = socket(AF_INET, SOCK_STREAM, 0);
-    return fd;
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    return sock;
 }
 
 /**
@@ -38,24 +38,24 @@ static int socket_create(void)
  * @sa
  *      telnet_fill_auth_data
  */
-static int tcp_fill_conn_info(tcp_conn_info *ret, char *ip_addr)
+static int tcp_fill_conn_info(conn_info *ret, char *ip_addr)
 {
-    ret->dst_addr = NULL;
+    ret->addr = NULL;
 
-    ret->fd = socket_create();
-    if (ret->fd == -1)
+    ret->sock = socket_create();
+    if (ret->sock == -1)
     {
         perror("Could not create socket\n");
         return -1;
     }
 
-    ret->dst_port = TELNET_PORT;
+    ret->port = TELNET_PORT;
 
-    ret->dst_addr = strdup(ip_addr ? ip_addr : STANDARD_IP_ADDR);
+    ret->addr = strdup(ip_addr ? ip_addr : STANDARD_IP_ADDR);
 
-    if (!ret->dst_addr)
+    if (!ret->addr)
     {
-        perror("Could not duplicate string for dst_addr\n");
+        perror("Could not duplicate string for addr\n");
         return -1;
     }
 
@@ -65,12 +65,12 @@ static int tcp_fill_conn_info(tcp_conn_info *ret, char *ip_addr)
 /** Free allocated memory and close socket for 'data'. */
 void telnet_free_auth_data(telnet_auth_data *data)
 {
-    free(data->tcp_conn.dst_addr);
+    free(data->tcp_conn.addr);
     free(data->recv_buff);
     free(data->username);
     free(data->password);
     free(data->exec_cmd);
-    close(data->tcp_conn.fd);
+    close(data->tcp_conn.sock);
 }
 
 /**
@@ -129,8 +129,8 @@ int telnet_fill_auth_data(telnet_auth_data *ret, char *ip_addr,
     return retval;
 
 cleanup:
-    if (ret->tcp_conn.dst_addr)
-        free(ret->tcp_conn.dst_addr);
+    if (ret->tcp_conn.addr)
+        free(ret->tcp_conn.addr);
 
     if (ret->recv_buff)
         free(ret->recv_buff);
@@ -166,7 +166,7 @@ static int telnet_recv_str(telnet_auth_data *data, char *expected)
     tv.tv_usec  = 0;
     offset      = 0;
 
-    retval = setsockopt(data->tcp_conn.fd, SOL_SOCKET, SO_RCVTIMEO,
+    retval = setsockopt(data->tcp_conn.sock, SOL_SOCKET, SO_RCVTIMEO,
                        (char *)&tv, sizeof(tv));
     if (retval)
     {
@@ -176,7 +176,7 @@ static int telnet_recv_str(telnet_auth_data *data, char *expected)
 
     while (1)
     {
-        retval = recv(data->tcp_conn.fd, data->recv_buff + offset,
+        retval = recv(data->tcp_conn.sock, data->recv_buff + offset,
                       RECV_BUFF_SIZE, 0);
         if (retval == -1)
         {
@@ -211,7 +211,7 @@ static int telnet_send_str(telnet_auth_data *data, char *str)
 {
     int retval;
 
-    retval = send(data->tcp_conn.fd, str, strlen(str), 0);
+    retval = send(data->tcp_conn.sock, str, strlen(str), 0);
     if (retval == -1)
     {
         perror("Could not send data to server\n");
@@ -253,7 +253,7 @@ int telnet_auth(telnet_auth_data *data,
 {
     int retval;
 
-    retval = tcp_connection_establish(&data->tcp_conn);
+    retval = socket_connect(&data->tcp_conn);
     if (retval)
         return retval;
 

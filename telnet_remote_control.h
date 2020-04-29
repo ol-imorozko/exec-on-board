@@ -12,10 +12,10 @@
 #ifndef _TELNET_REMOTE_CONTROL_
 #define _TELNET_REMOTE_CONTROL_
 
-#include "tcp_connection.h"
+#include "connection.h"
 
 typedef struct telnet_auth_data {
-    tcp_conn_info   tcp_conn;
+    conn_info       tcp_conn;
     char            *recv_buff;
     char            *username;
     char            *password;
