@@ -181,13 +181,7 @@ static int telnet_recv_specific_str(telnet_auth_data *data, char *expected)
             break;
         }
 
-        if(strstr(data->recv_buff, "incorrect") != NULL)
-        {
-            fprintf(stderr, "Login or password is incorrect\n");
-            return -1;
-        }
-
-        if(strstr(data->recv_buff, expected) != NULL)
+        if (strstr(data->recv_buff, expected) != NULL)
         {
             memset(data->recv_buff, 0, retval);
             return 0;
@@ -200,9 +194,7 @@ static int telnet_recv_specific_str(telnet_auth_data *data, char *expected)
 }
 
 /**
- * Send string specified by 'v' to remote telnet server.
- *
- * @param   v       Enum: USERNAME, PASSWORD, COMMAND.
+ * Send string 'str' to remote telnet server.
  *
  * @return
  *      Zero on success, or -1, if error occurred.
@@ -210,27 +202,11 @@ static int telnet_recv_specific_str(telnet_auth_data *data, char *expected)
  * @se
  *      Prints information about occurred error to stderr.
  */
-static int telnet_send_str(telnet_auth_data *data, send_str_variants v)
+static int telnet_send_str(telnet_auth_data *data, char *str)
 {
     int retval;
-    char *send_str;
 
-    switch (v)
-    {
-        case USERNAME:
-            send_str = data->username;
-            break;
-
-        case PASSWORD:
-            send_str = data->password;
-            break;
-
-        case COMMAND:
-            send_str = data->exec_cmd;
-            break;
-    }
-
-    retval = send(data->tcp_conn.fd, send_str, strlen(send_str), 0);
+    retval = send(data->tcp_conn.fd, str, strlen(str), 0);
     if (retval == -1)
     {
         perror("Could not send data to server\n");
@@ -261,6 +237,9 @@ static int telnet_send_str(telnet_auth_data *data, send_str_variants v)
  * @return
  *      Zero on success, or -1, if error occurred.
  *
+ * @se
+ *      Prints information about occurred error to stderr.
+ *
  */
 int telnet_auth(telnet_auth_data *data,
                 char *expected_login_responce,
@@ -270,28 +249,37 @@ int telnet_auth(telnet_auth_data *data,
     int retval;
 
     retval = tcp_connection_establish(&data->tcp_conn);
-    if(retval)
+    if (retval)
         return retval;
 
     retval = telnet_recv_specific_str(data, expected_login_responce);
-    if(retval)
+    if (retval)
+    {
+        fprintf(stderr, "Could not reach expected responce\n");
         return retval;
+    }
 
-    retval = telnet_send_str(data, USERNAME);
-    if(retval)
+    retval = telnet_send_str(data, data->username);
+    if (retval)
         return retval;
 
     retval = telnet_recv_specific_str(data, expected_password_responce);
-    if(retval)
+    if (retval)
+    {
+        fprintf(stderr, "Could not reach expected responce\n");
         return retval;
+    }
 
-    retval = telnet_send_str(data, PASSWORD);
-    if(retval)
+    retval = telnet_send_str(data, data->password);
+    if (retval)
         return retval;
 
     retval = telnet_recv_specific_str(data, expected_auth_responce);
-    if(retval)
+    if (retval)
+    {
+        fprintf(stderr, "Maybe login or password is incorrect\n");
         return retval;
+    }
 
     return retval;
 }
@@ -306,19 +294,25 @@ int telnet_auth(telnet_auth_data *data,
  * @return
  *      Zero on success, or -1, if error occurred.
  *
+ * @se
+ *      Prints information about occurred error to stderr.
+ *
  */
 int telnet_execute_command(telnet_auth_data *data,
                            char *expected_responce)
 {
     int retval;
 
-    retval = telnet_send_str(data, COMMAND);
-    if(retval)
+    retval = telnet_send_str(data, data->exec_cmd);
+    if (retval)
         return retval;
 
     retval = telnet_recv_specific_str(data, expected_responce);
-    if(retval)
+    if (retval)
+    {
+        fprintf(stderr, "Could not reach expected responce\n");
         return retval;
+    }
 
     return retval;
 }

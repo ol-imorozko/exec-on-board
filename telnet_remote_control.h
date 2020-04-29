@@ -11,12 +11,6 @@ typedef struct telnet_auth_data {
     char            *exec_cmd;
 } telnet_auth_data;
 
-typedef enum send_str_variants {
-    USERNAME,
-    PASSWORD,
-    COMMAND
-} send_str_variants;
-
 extern int telnet_fill_auth_data(telnet_auth_data *ret, char *ip_addr,
                                  char *username, char *password);
 
