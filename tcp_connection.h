@@ -1,3 +1,11 @@
+/** @file
+ * @brief Wrapper for connect function.
+ *
+ * @author Ivan Morozko <Ivan.Morozko@oktetlabs.ru>
+ *
+ * $Id: $
+ */
+
 #ifndef _TCP_CONNECTION_
 #define _TCP_CONNECTION_
 

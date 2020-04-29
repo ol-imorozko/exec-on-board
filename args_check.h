@@ -1,3 +1,11 @@
+/** @file
+ * @brief Arguments checking for dump_wifi_params tool.
+ *
+ * @author Ivan Morozko <Ivan.Morozko@oktetlabs.ru>
+ *
+ * $Id: $
+ */
+
 #ifndef _ARGS_CHECK
 #define _ARGS_CHECK
 

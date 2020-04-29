@@ -1,3 +1,14 @@
+/** @file
+ * @brief Interface for executing commands via telnet.
+ *
+ * Functions for authorising and executing commands on
+ * remote telnet server.
+ *
+ * @author Ivan Morozko <Ivan.Morozko@oktetlabs.ru>
+ *
+ * $Id: $
+ */
+
 #ifndef _TELNET_REMOTE_CONTROL_
 #define _TELNET_REMOTE_CONTROL_
 
