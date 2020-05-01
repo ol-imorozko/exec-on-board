@@ -25,10 +25,14 @@ int main(int argc, char **argv)
 
     retval = telnet_auth(&board_control_data, "login:", "Password:", "root@ugwcpe:~#");
     if (retval)
-        return retval;
+        goto cleanup;
 
     telnet_free_auth_data(&board_control_data);
 
+    return retval;
+
+cleanup:
+    telnet_free_auth_data(&board_control_data);
     return retval;
 }
 
