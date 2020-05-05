@@ -66,3 +66,29 @@ int socket_bind(conn_info *info)
 
     return 0;
 }
+
+/**
+ * Fill 'ret' structure with appropriate data.
+ *
+ * @return
+ *      Zero on success, or -1, if error occured.
+ *
+ * @se
+ *      Prints information about occurred error to stderr.
+ *
+ */
+int conn_info_fill(conn_info *ret, char *ip_addr,
+                   int port, int sock_type)
+{
+    ret->sock = socket(AF_INET, sock_type, 0);
+    if (ret->sock == -1)
+    {
+        perror("Could not create socket\n");
+        return -1;
+    }
+
+    ret->port = port;
+    ret->addr = ip_addr;
+
+    return 0;
+}

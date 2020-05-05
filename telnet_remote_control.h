@@ -25,7 +25,7 @@ typedef struct telnet_auth_data {
 extern int telnet_fill_auth_data(telnet_auth_data *ret, char *ip_addr,
                                  char *username, char *password);
 
-extern void telnet_free_auth_data(telnet_auth_data *data);
+extern int telnet_free_auth_data(telnet_auth_data *data);
 
 extern int telnet_auth(telnet_auth_data *data,
                        char *expected_login_responce,
@@ -33,5 +33,6 @@ extern int telnet_auth(telnet_auth_data *data,
                        char *expected_auth_responce);
 
 extern int telnet_execute_command(telnet_auth_data *data,
+                                  char *command,
                                   char *expected_responce);
 #endif

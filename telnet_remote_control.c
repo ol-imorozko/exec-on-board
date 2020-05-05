@@ -7,142 +7,51 @@
 
 #include "telnet_remote_control.h"
 
-#define STANDARD_IP_ADDR    "192.168.1.1"
-#define STANDARD_USERNAME   "admin"
-#define STANDARD_PASSWORD   "admin"
 #define TELNET_PORT         23
-#define RECV_BUFF_SIZE      10000
-#define CMD_BUFF_SIZE       1000
+#define MAX_RECV_BUFF_SIZE  10000
+#define MAX_CMD_BUFF_SIZE   1000
 #define TIMEOUT             3
 
-/** create AF_INET, SOCK_STREAM socket */
-static int socket_create(void)
-{
-    int sock;
-
-    sock = socket(AF_INET, SOCK_STREAM, 0);
-    return sock;
-}
-
 /**
  * Fill 'ret' structure with appropriate data.
- * If 'ip_addr', is not given (equal to NULL),
- * function will use standard defined value.
  *
  * @return
  *      Zero on success, or -1, if error occured.
  *
- * @se
- *      Prints information about occurred error to stderr.
- *
- * @sa
- *      telnet_fill_auth_data
- */
-static int tcp_fill_conn_info(conn_info *ret, char *ip_addr)
-{
-    ret->addr = NULL;
-
-    ret->sock = socket_create();
-    if (ret->sock == -1)
-    {
-        perror("Could not create socket\n");
-        return -1;
-    }
-
-    ret->port = TELNET_PORT;
-
-    ret->addr = strdup(ip_addr ? ip_addr : STANDARD_IP_ADDR);
-
-    if (!ret->addr)
-    {
-        perror("Could not duplicate string for addr\n");
-        return -1;
-    }
-
-    return 0;
-}
-
-/** Free allocated memory and close socket for 'data'. */
-void telnet_free_auth_data(telnet_auth_data *data)
-{
-    free(data->tcp_conn.addr);
-    free(data->recv_buff);
-    free(data->username);
-    free(data->password);
-    free(data->exec_cmd);
-    close(data->tcp_conn.sock);
-}
-
-/**
- * Fill 'ret' structure with appropriate data.
- * If 'ip_addr', 'password', or 'username' is not given (equal to NULL),
- * function will use standard defined values.
- *
- * @return
- *      Zero on success, or -1, if error occured.
- *
- * @se
- *      Prints information about occurred error to stderr.
  */
 int telnet_fill_auth_data(telnet_auth_data *ret, char *ip_addr,
                           char *username, char *password)
 {
     int retval;
 
-    ret->recv_buff  = NULL;
-    ret->username   = NULL;
-    ret->password   = NULL;
-    ret->exec_cmd   = NULL;
-
-    retval = tcp_fill_conn_info(&ret->tcp_conn, ip_addr);
+    retval = conn_info_fill(&ret->tcp_conn, ip_addr,
+                            TELNET_PORT, SOCK_STREAM);
     if (retval)
-        goto cleanup;
+        return retval;
 
-    ret->recv_buff = calloc(RECV_BUFF_SIZE, sizeof(char));
-    if (!ret->recv_buff)
-    {
-        perror("Could not allocate memory for receive buffer\n");
-        goto cleanup;
-    }
-
-    ret->exec_cmd = calloc(CMD_BUFF_SIZE, sizeof(char));
-    if (!ret->recv_buff)
-    {
-        perror("Could not allocate memory for execution command\n");
-        goto cleanup;
-    }
-
-    ret->username = strdup(username ? username : STANDARD_USERNAME"\r");
-    if (!ret->username)
-    {
-        perror("Could not duplicate string for username\n");
-        goto cleanup;
-    }
-
-    ret->password = strdup(password ? password : STANDARD_PASSWORD"\r");
-    if (!ret->password)
-    {
-        perror("Could not duplicate string for password\n");
-        goto cleanup;
-    }
+    ret->username = username;
+    ret->password = password;
 
     return retval;
+}
 
-cleanup:
-    if (ret->tcp_conn.addr)
-        free(ret->tcp_conn.addr);
+/**
+ * Close socket for telnet_auth_data
+ *
+ * @return
+ *      Zero on success, or -1, if error occured.
+ *
+ * @se
+ *      Prints information about occurred error to stderr.
+ *
+ */
+int telnet_free_auth_data(telnet_auth_data *data)
+{
+    int retval;
 
-    if (ret->recv_buff)
-        free(ret->recv_buff);
-
-    if (ret->password)
-        free(ret->password);
-
-    if (ret->username)
-        free(ret->username);
-
-    if (ret->exec_cmd)
-        free(ret->exec_cmd);
+    retval = close(data->tcp_conn.sock);
+    if (retval)
+        perror("Could not close socket\n");
 
     return retval;
 }
@@ -157,7 +66,7 @@ cleanup:
  * @se
  *      Prints information about occurred error to stderr.
  */
-static int telnet_recv_str(telnet_auth_data *data, char *expected)
+static int telnet_recv_str(telnet_auth_data *data, char *expected, char *buff)
 {
     int retval;
     int offset;
@@ -176,8 +85,8 @@ static int telnet_recv_str(telnet_auth_data *data, char *expected)
 
     while (1)
     {
-        retval = recv(data->tcp_conn.sock, data->recv_buff + offset,
-                      RECV_BUFF_SIZE, 0);
+        retval = recv(data->tcp_conn.sock, buff + offset,
+                      MAX_RECV_BUFF_SIZE, 0);
         if (retval == -1)
         {
             perror("Could not receive data from server\n");
@@ -186,14 +95,14 @@ static int telnet_recv_str(telnet_auth_data *data, char *expected)
 
         offset += retval;
 
-        if (strstr(data->recv_buff, expected) != NULL)
+        if (strstr(buff, expected) != NULL)
         {
-            memset(data->recv_buff, 0, offset);
+            memset(buff, 0, offset);
             return 0;
         }
     }
 
-    memset(data->recv_buff, 0, retval);
+    memset(buff, 0, retval);
 
     return retval;
 }
@@ -252,12 +161,13 @@ int telnet_auth(telnet_auth_data *data,
                 char *expected_auth_responce)
 {
     int retval;
+    char recv_buff[MAX_RECV_BUFF_SIZE] = {0};
 
     retval = socket_connect(&data->tcp_conn);
     if (retval)
         return retval;
 
-    retval = telnet_recv_str(data, expected_login_responce);
+    retval = telnet_recv_str(data, expected_login_responce, recv_buff);
     if (retval)
     {
         fprintf(stderr, "Could not reach expected responce\n");
@@ -268,7 +178,7 @@ int telnet_auth(telnet_auth_data *data,
     if (retval)
         return retval;
 
-    retval = telnet_recv_str(data, expected_password_responce);
+    retval = telnet_recv_str(data, expected_password_responce, recv_buff);
     if (retval)
     {
         fprintf(stderr, "Could not reach expected responce\n");
@@ -279,7 +189,7 @@ int telnet_auth(telnet_auth_data *data,
     if (retval)
         return retval;
 
-    retval = telnet_recv_str(data, expected_auth_responce);
+    retval = telnet_recv_str(data, expected_auth_responce, recv_buff);
     if (retval)
     {
         fprintf(stderr, "Maybe login or password is incorrect\n");
@@ -304,15 +214,17 @@ int telnet_auth(telnet_auth_data *data,
  *
  */
 int telnet_execute_command(telnet_auth_data *data,
+                           char *command,
                            char *expected_responce)
 {
     int retval;
+    char command_buff[MAX_CMD_BUFF_SIZE] = {0};
 
-    retval = telnet_send_str(data, data->exec_cmd);
+    retval = telnet_send_str(data, command);
     if (retval)
         return retval;
 
-    retval = telnet_recv_str(data, expected_responce);
+    retval = telnet_recv_str(data, expected_responce, command_buff);
     if (retval)
     {
         fprintf(stderr, "Could not reach expected responce\n");

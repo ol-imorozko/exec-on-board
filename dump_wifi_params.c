@@ -19,7 +19,7 @@ int main(int argc, char **argv)
     if (retval)
         return retval;
 
-    retval = telnet_fill_auth_data(&board_control_data, NULL, NULL, NULL);
+    retval = telnet_fill_auth_data(&board_control_data, "192.168.1.1", "admin\r", "admin\r");
     if (retval)
         return retval;
 
@@ -27,7 +27,6 @@ int main(int argc, char **argv)
     if (retval)
         goto cleanup;
 
-    telnet_free_auth_data(&board_control_data);
 
     return retval;
 

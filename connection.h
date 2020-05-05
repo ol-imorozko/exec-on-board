@@ -22,4 +22,7 @@ extern int socket_bind(conn_info *info);
 
 extern int socket_connect(conn_info *info);
 
+extern int conn_info_fill(conn_info *ret, char *ip_addr,
+                          int port, int sock_type);
+
 #endif
