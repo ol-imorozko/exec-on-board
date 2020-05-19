@@ -9,7 +9,6 @@
 
 #define TELNET_PORT         23
 #define MAX_RECV_BUFF_SIZE  10000
-#define MAX_CMD_BUFF_SIZE   1000
 #define TIMEOUT             3
 
 /**
@@ -69,14 +68,13 @@ int telnet_free_auth_data(telnet_auth_data *data)
 static int telnet_recv_str(telnet_auth_data *data, char *expected, char *buff)
 {
     int retval;
-    int offset;
+    int offset = 0;
     struct timeval tv;
     tv.tv_sec   = TIMEOUT;
     tv.tv_usec  = 0;
-    offset      = 0;
 
     retval = setsockopt(data->tcp_conn.sock, SOL_SOCKET, SO_RCVTIMEO,
-                       (char *)&tv, sizeof(tv));
+                        (char *)&tv, sizeof(tv));
     if (retval)
     {
         perror("Could not set socket option\n");
@@ -102,7 +100,7 @@ static int telnet_recv_str(telnet_auth_data *data, char *expected, char *buff)
         }
     }
 
-    memset(buff, 0, retval);
+    memset(buff, 0, offset);
 
     return retval;
 }
@@ -217,14 +215,14 @@ int telnet_execute_command(telnet_auth_data *data,
                            char *command,
                            char *expected_responce)
 {
-    int retval;
-    char command_buff[MAX_CMD_BUFF_SIZE] = {0};
+    int  retval;
+    char recv_buff[MAX_RECV_BUFF_SIZE] = {0};
 
     retval = telnet_send_str(data, command);
     if (retval)
         return retval;
 
-    retval = telnet_recv_str(data, expected_responce, command_buff);
+    retval = telnet_recv_str(data, expected_responce, recv_buff);
     if (retval)
     {
         fprintf(stderr, "Could not reach expected responce\n");
