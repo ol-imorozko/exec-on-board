@@ -1,22 +1,30 @@
-all: tool
+TARGET   = dump_wifi_params
 
-tool: dump_wifi_params.o args_check.o connection.o telnet_remote_control.o tftp_server.o
-	gcc -pthread dump_wifi_params.o args_check.o connection.o telnet_remote_control.o tftp_server.o -o dump_wifi_params
+CC       = gcc
+CFLAGS   = -Wall -Wextra -I.
 
-dump_wifi_params.o: dump_wifi_params.c
-	gcc -Wall -Wextra -c dump_wifi_params.c -o dump_wifi_params.o
+LINKER   = gcc
+LFLAGS   = -Wall -I.
 
-args_check.o: args_check.c
-	gcc -Wall -Wextra -c args_check.c -o args_check.o
+SRCDIR   = src
+INCDIR   = include
+OBJDIR   = obj
 
-connection.o: connection.c
-	gcc -Wall -Wextra -c connection.c -o connection.o
+SOURCES  := $(wildcard $(SRCDIR)/*.c)
+INCLUDES := $(wildcard $(INCDIR)/*.h)
+OBJECTS  := $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
+rm       = rm -f
 
-telnet_remote_control.o: telnet_remote_control.c
-	gcc -Wall -Wextra -c telnet_remote_control.c -o telnet_remote_control.o
 
-tftp_server.o: tftp_server.c
-	gcc -Wall -Wextra -c tftp_server.c -o tftp_server.o
+$(TARGET): $(OBJECTS)
+	@$(LINKER) $(OBJECTS) $(LFLAGS) -o $@
+	@echo "Linking complete!"
 
+$(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.c
+	@$(CC) $(CFLAGS) -c $< -o $@
+	@echo "Compiled "$<" successfully!"
+
+.PHONY: clean
 clean:
-	rm -r *.o tool
+	@$(rm) $(OBJECTS)
+	@echo "Cleanup complete!"

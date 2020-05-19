@@ -13,7 +13,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 
-#include "tftp_server.h"
+#include "include/tftp_server.h"
 
 #define RECV_TIMEOUT            5
 #define RECV_RETRIES            5
@@ -62,7 +62,7 @@ typedef union {
 } __attribute__((packed)) tftp_message;
 
 /** Handle error in child proccess */
-void chld_handler(void)
+void chld_handler()
 {
      int status;
      wait(&status);

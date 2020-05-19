@@ -4,8 +4,8 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "args_check.h"
-#include "telnet_remote_control.h"
+#include "include/args_check.h"
+#include "include/telnet_remote_control.h"
 
 /* TODO: error while filling.... print errors to stdout.
 all other erors should be printed to stderr! */

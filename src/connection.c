@@ -5,7 +5,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "connection.h"
+#include "include/connection.h"
 
 /**
  * Perform connect on socket.

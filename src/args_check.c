@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "args_check.h"
+#include "include/args_check.h"
 
 /* TODO: get this values from program conf file */
 static int  possible_types_count = 1;

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "telnet_remote_control.h"
+#include "include/telnet_remote_control.h"
 
 #define TELNET_PORT         23
 #define MAX_RECV_BUFF_SIZE  10000
