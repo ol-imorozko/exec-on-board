@@ -93,7 +93,7 @@ static int telnet_recv_str(telnet_auth_data *data, char *expected, char *buff)
 
         offset += retval;
 
-        if (strstr(buff, expected) != NULL)
+        if (strstr(buff, expected))
             return 0;
     }
 
@@ -101,7 +101,7 @@ static int telnet_recv_str(telnet_auth_data *data, char *expected, char *buff)
 }
 
 /**
- * Send string 'str' to remote telnet server.
+ * Send string 'str' to telnet server.
  *
  * @return
  *      Zero on success, or -1, if error occurred.
@@ -124,7 +124,7 @@ static int telnet_send_str(telnet_auth_data *data, char *str)
 }
 
 /**
- * Authorise on remote telnet server
+ * Authorise on telnet server
  * by username and password specified in 'data'.
  * Different telnet servers could have different responces
  * for users, so we must specify string we are waiting for.
@@ -146,7 +146,6 @@ static int telnet_send_str(telnet_auth_data *data, char *str)
  *
  * @se
  *      Prints information about occurred error to stderr.
- *
  */
 int telnet_auth(telnet_auth_data *data,
                 char *expected_login_responce,
@@ -162,10 +161,7 @@ int telnet_auth(telnet_auth_data *data,
 
     retval = telnet_recv_str(data, expected_login_responce, recv_buff);
     if (retval)
-    {
-        fprintf(stderr, "Could not reach expected responce\n");
         return retval;
-    }
 
     memset(recv_buff, 0, MAX_RECV_BUFF_SIZE);
 
@@ -175,10 +171,7 @@ int telnet_auth(telnet_auth_data *data,
 
     retval = telnet_recv_str(data, expected_password_responce, recv_buff);
     if (retval)
-    {
-        fprintf(stderr, "Could not reach expected responce\n");
         return retval;
-    }
 
     memset(recv_buff, 0, MAX_RECV_BUFF_SIZE);
 
@@ -189,7 +182,9 @@ int telnet_auth(telnet_auth_data *data,
     retval = telnet_recv_str(data, expected_auth_responce, recv_buff);
     if (retval)
     {
-        fprintf(stderr, "Maybe login or password is incorrect\n");
+        fprintf(stderr, "Error occured. Telnet output:\n"
+                        "----------------------------------\n%s\n"
+                        "----------------------------------\n", recv_buff);
         return retval;
     }
 
@@ -197,22 +192,23 @@ int telnet_auth(telnet_auth_data *data,
 }
 
 /**
- * Execute command specified in 'data' on remote telnet server.
+ * Execute command specified in 'data' on telnet server.
  *
  * @param   expected_responce
- *      The string we are waiting from the server
- *      after successful execution.
+ *      String that server would send after successful execution.
+ *
+ * @param   error_substr
+ *      String that server would send if an error occured.
  *
  * @return
  *      Zero on success, or -1, if error occurred.
  *
  * @se
  *      Prints information about occurred error to stderr.
- *
  */
 int telnet_execute_command(telnet_auth_data *data,
-                           char *command,
-                           char *expected_responce)
+                           char *command, char *expected_responce,
+                           char *error_substr)
 {
     int  retval;
     char recv_buff[MAX_RECV_BUFF_SIZE] = {0};
@@ -223,9 +219,14 @@ int telnet_execute_command(telnet_auth_data *data,
 
     retval = telnet_recv_str(data, expected_responce, recv_buff);
     if (retval)
-    {
-        fprintf(stderr, "Could not reach expected responce\n");
         return retval;
+
+    if (strstr(recv_buff, error_substr))
+    {
+        fprintf(stderr, "Error occured. Telnet output:\n"
+                        "----------------------------------\n%s\n"
+                        "----------------------------------\n", recv_buff);
+        return -1;
     }
 
     return retval;

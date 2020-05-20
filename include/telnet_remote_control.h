@@ -33,6 +33,6 @@ extern int telnet_auth(telnet_auth_data *data,
                        char *expected_auth_responce);
 
 extern int telnet_execute_command(telnet_auth_data *data,
-                                  char *command,
-                                  char *expected_responce);
+                                  char *command, char *expected_responce,
+                                  char *error_substr);
 #endif
