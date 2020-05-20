@@ -50,7 +50,7 @@ int telnet_free_auth_data(telnet_auth_data *data)
 
     retval = close(data->tcp_conn.sock);
     if (retval)
-        perror("Could not close socket\n");
+        perror("telnet: close()");
 
     return retval;
 }
@@ -77,7 +77,7 @@ static int telnet_recv_str(telnet_auth_data *data, char *expected, char *buff)
                         (char *)&tv, sizeof(tv));
     if (retval)
     {
-        perror("Could not set socket option\n");
+        perror("telnet: setsockopt()");
         return retval;
     }
 
@@ -87,20 +87,15 @@ static int telnet_recv_str(telnet_auth_data *data, char *expected, char *buff)
                       MAX_RECV_BUFF_SIZE, 0);
         if (retval == -1)
         {
-            perror("Could not receive data from server\n");
+            perror("telnet: recv()");
             break;
         }
 
         offset += retval;
 
         if (strstr(buff, expected) != NULL)
-        {
-            memset(buff, 0, offset);
             return 0;
-        }
     }
-
-    memset(buff, 0, offset);
 
     return retval;
 }
@@ -121,7 +116,7 @@ static int telnet_send_str(telnet_auth_data *data, char *str)
     retval = send(data->tcp_conn.sock, str, strlen(str), 0);
     if (retval == -1)
     {
-        perror("Could not send data to server\n");
+        perror("telnet: send()");
         return retval;
     }
 
@@ -172,6 +167,8 @@ int telnet_auth(telnet_auth_data *data,
         return retval;
     }
 
+    memset(recv_buff, 0, MAX_RECV_BUFF_SIZE);
+
     retval = telnet_send_str(data, data->username);
     if (retval)
         return retval;
@@ -182,6 +179,8 @@ int telnet_auth(telnet_auth_data *data,
         fprintf(stderr, "Could not reach expected responce\n");
         return retval;
     }
+
+    memset(recv_buff, 0, MAX_RECV_BUFF_SIZE);
 
     retval = telnet_send_str(data, data->password);
     if (retval)
