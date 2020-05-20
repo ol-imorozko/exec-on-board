@@ -18,7 +18,7 @@
 #define RECV_TIMEOUT            5
 #define RECV_RETRIES            5
 #define TFTP_MAX_PAYLOAD        512
-#define TFTP_MIN_REQUEST_SIZE   4
+#define TFTP_MSG_MIN_SIZE   4
 
 enum tftp_opcode {
     RRQ = 1,
@@ -377,7 +377,7 @@ static char* tftp_handle_read_request(int s, FILE *fd,
                         ntohs(client_sock->sin_port));
                 exit(EXIT_FAILURE);
             }
-            else if (msg_len >= 0 && msg_len < TFTP_MIN_REQUEST_SIZE)
+            else if (msg_len >= 0 && msg_len < TFTP_MSG_MIN_SIZE)
                 return "message with invalid size received";
             else
                 break;
@@ -465,7 +465,7 @@ static char* tftp_handle_write_request(int s, FILE *fd,
                     exit(EXIT_FAILURE);
                 }
             }
-            else if (msg_len >= 0 && msg_len < TFTP_MIN_REQUEST_SIZE)
+            else if (msg_len >= 0 && msg_len < TFTP_MSG_MIN_SIZE)
                 return "message with invalid size received";
             else
                 break;
@@ -644,7 +644,7 @@ int tftp_server_start(tftp_server_data *srv_data)
         if (msg_len < 0)
             continue;
 
-        if (msg_len < TFTP_MIN_REQUEST_SIZE)
+        if (msg_len < TFTP_MSG_MIN_SIZE)
         {
             printf("%s.%u: request with invalid size received\n",
                     inet_ntoa(client_sock.sin_addr),
@@ -666,7 +666,7 @@ int tftp_server_start(tftp_server_data *srv_data)
         }
         else
         {
-            printf("%s.%u: invalid request received: %d \n",
+            printf("%s.%u: invalid request received: %d\n",
                     inet_ntoa(client_sock.sin_addr),
                     ntohs(client_sock.sin_port), opcode);
             tftp_send_error(s, 0, "invalid opcode", &client_sock, slen);
