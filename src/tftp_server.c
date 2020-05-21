@@ -61,15 +61,6 @@ typedef union {
 
 } __attribute__((packed)) tftp_message;
 
-/** Handle error in child proccess */
-void chld_handler()
-{
-     int status;
-     wait(&status);
-
-     /* handle error here */
-}
-
 /**
  * Fill 'ret' structure with appropriate data.
  *
@@ -88,6 +79,15 @@ int tftp_fill_server_data(tftp_server_data *ret, char *ip_addr,
     ret->base_directory = base_directory;
 
     return retval;
+}
+
+/** Handle error in child proccess */
+void chld_handler()
+{
+    int status;
+    wait(&status);
+
+    /* handle error here */
 }
 
 /**
@@ -595,8 +595,6 @@ void tftp_handle_request(tftp_message *msg, ssize_t msg_len,
 
     fclose(fd);
     close(s);
-
-    exit(EXIT_SUCCESS);
 }
 
 /**
@@ -613,14 +611,12 @@ int tftp_server_start(tftp_server_data *srv_data)
 {
     int                 s;
     int                 retval;
-    uint16_t            opcode;
     ssize_t             msg_len;
-    tftp_message        msg;
     struct sockaddr_in  client_sock;
     socklen_t           slen;
 
-    s = srv_data->udp_conn.sock;
-    slen = sizeof(client_sock);
+    s      = srv_data->udp_conn.sock;
+    slen   = sizeof(client_sock);
 
     retval = chdir(srv_data->base_directory);
     if (retval)
@@ -639,6 +635,8 @@ int tftp_server_start(tftp_server_data *srv_data)
 
     while (1)
     {
+        tftp_message msg;
+
         msg_len = tftp_recv_message(s, &msg, &client_sock, &slen);
 
         if (msg_len < 0)
@@ -653,26 +651,22 @@ int tftp_server_start(tftp_server_data *srv_data)
             continue;
         }
 
-        opcode = ntohs(msg.opcode);
-
-        if (opcode == RRQ || opcode == WRQ)
+        if (ntohs(msg.opcode) == RRQ || ntohs(msg.opcode) == WRQ)
         {
             if (fork() == 0)
             {
                 tftp_handle_request(&msg, msg_len, srv_data->base_directory,
                                     &client_sock, slen);
-                exit(0);
+                exit(EXIT_SUCCESS);
             }
         }
         else
         {
             printf("%s.%u: invalid request received: %d\n",
                     inet_ntoa(client_sock.sin_addr),
-                    ntohs(client_sock.sin_port), opcode);
+                    ntohs(client_sock.sin_port), ntohs(msg.opcode));
             tftp_send_error(s, 0, "invalid opcode", &client_sock, slen);
         }
-
-        memset(&msg, 0, msg_len);
     }
 
     close(s);

@@ -8,8 +8,6 @@
 #include "include/connection.h"
 
 /**
- * Perform connect on socket.
- *
  * @return
  *      Zero on success, or -1, if error occurred.
  *
@@ -38,8 +36,6 @@ int socket_connect(conn_info *info)
 }
 
 /**
- * Perform bind on socket.
- *
  * @return
  *      Zero on success, or -1, if error occurred.
  *
@@ -75,7 +71,6 @@ int socket_bind(conn_info *info)
  *
  * @se
  *      Prints information about occurred error to stderr.
- *
  */
 int conn_info_fill(conn_info *ret, char *ip_addr,
                    int port, int sock_type)
