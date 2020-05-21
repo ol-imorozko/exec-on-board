@@ -26,4 +26,9 @@ extern int tftp_fill_server_data(tftp_server_data *ret, char *ip_addr,
 
 extern int tftp_server_start(tftp_server_data *srv_data);
 
+static inline void tftp_server_stop(int pid)
+{
+    kill(pid, SIGTERM);
+}
+
 #endif

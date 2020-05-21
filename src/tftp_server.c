@@ -18,7 +18,7 @@
 #define RECV_TIMEOUT            5
 #define RECV_RETRIES            5
 #define TFTP_MAX_PAYLOAD        512
-#define TFTP_MSG_MIN_SIZE   4
+#define TFTP_MSG_MIN_SIZE       4
 
 enum tftp_opcode {
     RRQ = 1,
@@ -61,6 +61,28 @@ typedef union {
 
 } __attribute__((packed)) tftp_message;
 
+/* Global variable that helps properly close the server. */
+int global_server_socket;
+
+/** Close tftp server.  */
+void term_handler()
+{
+    printf("tftp server: shutting down\n");
+
+    close(global_server_socket);
+
+    exit(EXIT_SUCCESS);
+}
+
+/** Handle error in child proccess */
+void chld_handler()
+{
+    int status;
+    wait(&status);
+
+    /* handle error here */
+}
+
 /**
  * Fill 'ret' structure with appropriate data.
  *
@@ -79,15 +101,6 @@ int tftp_fill_server_data(tftp_server_data *ret, char *ip_addr,
     ret->base_directory = base_directory;
 
     return retval;
-}
-
-/** Handle error in child proccess */
-void chld_handler()
-{
-    int status;
-    wait(&status);
-
-    /* handle error here */
 }
 
 /**
@@ -600,7 +613,7 @@ void tftp_handle_request(tftp_message *msg, ssize_t msg_len,
 /**
  * Start tftp server on ip, port and directory specified in
  * 'srv_data' structure.
- * Server stops by sending signal to it.
+ * Server stops by sending signal SIGTERM to it.
  *
  * @se
  *      Prints information about occurred error to stderr.
@@ -629,7 +642,10 @@ int tftp_server_start(tftp_server_data *srv_data)
     if (retval)
         return retval;
 
+    global_server_socket = s;
+
     signal(SIGCHLD, (void *) chld_handler);
+    signal(SIGTERM, (void *) term_handler);
 
     printf("tftp server: listening on %d\n", get_port(&srv_data->udp_conn));
 
@@ -668,8 +684,4 @@ int tftp_server_start(tftp_server_data *srv_data)
             tftp_send_error(s, 0, "invalid opcode", &client_sock, slen);
         }
     }
-
-    close(s);
-
-    return 0;
 }
