@@ -615,7 +615,7 @@ int tftp_server_start(tftp_server_data *srv_data)
     struct sockaddr_in  client_sock;
     socklen_t           slen;
 
-    s      = srv_data->udp_conn.sock;
+    s      = get_sock(&srv_data->udp_conn);
     slen   = sizeof(client_sock);
 
     retval = chdir(srv_data->base_directory);
@@ -631,7 +631,7 @@ int tftp_server_start(tftp_server_data *srv_data)
 
     signal(SIGCHLD, (void *) chld_handler);
 
-    printf("tftp server: listening on %d\n", srv_data->udp_conn.port);
+    printf("tftp server: listening on %d\n", get_port(&srv_data->udp_conn));
 
     while (1)
     {

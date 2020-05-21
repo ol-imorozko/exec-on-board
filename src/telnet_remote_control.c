@@ -16,7 +16,6 @@
  *
  * @return
  *      Zero on success, or -1, if error occured.
- *
  */
 int telnet_fill_auth_data(telnet_auth_data *ret, char *ip_addr,
                           char *username, char *password)
@@ -35,20 +34,22 @@ int telnet_fill_auth_data(telnet_auth_data *ret, char *ip_addr,
 }
 
 /**
- * Close socket for telnet_auth_data
+ * Close socket for telnet_auth_data.
  *
  * @return
  *      Zero on success, or -1, if error occured.
  *
  * @se
  *      Prints information about occurred error to stderr.
- *
  */
 int telnet_free_auth_data(telnet_auth_data *data)
 {
     int retval;
+    int s;
 
-    retval = close(data->tcp_conn.sock);
+    s = get_sock(&data->tcp_conn);
+
+    retval = close(s);
     if (retval)
         perror("telnet: close()");
 
@@ -68,13 +69,16 @@ int telnet_free_auth_data(telnet_auth_data *data)
 static int telnet_recv_str(telnet_auth_data *data, char *expected, char *buff)
 {
     int retval;
-    int offset = 0;
+    int offset;
+    int s;
     struct timeval tv;
+
+    s           = get_sock(&data->tcp_conn);
     tv.tv_sec   = TIMEOUT;
     tv.tv_usec  = 0;
+    offset      = 0;
 
-    retval = setsockopt(data->tcp_conn.sock, SOL_SOCKET, SO_RCVTIMEO,
-                        (char *)&tv, sizeof(tv));
+    retval = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(tv));
     if (retval)
     {
         perror("telnet: setsockopt()");
@@ -83,8 +87,7 @@ static int telnet_recv_str(telnet_auth_data *data, char *expected, char *buff)
 
     while (1)
     {
-        retval = recv(data->tcp_conn.sock, buff + offset,
-                      MAX_RECV_BUFF_SIZE, 0);
+        retval = recv(s, buff + offset, MAX_RECV_BUFF_SIZE, 0);
         if (retval == -1)
         {
             perror("telnet: recv()");
@@ -112,8 +115,11 @@ static int telnet_recv_str(telnet_auth_data *data, char *expected, char *buff)
 static int telnet_send_str(telnet_auth_data *data, char *str)
 {
     int retval;
+    int s;
 
-    retval = send(data->tcp_conn.sock, str, strlen(str), 0);
+    s = get_sock(&data->tcp_conn);
+
+    retval = send(s, str, strlen(str), 0);
     if (retval == -1)
     {
         perror("telnet: send()");
@@ -124,10 +130,9 @@ static int telnet_send_str(telnet_auth_data *data, char *str)
 }
 
 /**
- * Authorise on telnet server
- * by username and password specified in 'data'.
- * Different telnet servers could have different responces
- * for users, so we must specify string we are waiting for.
+ * Authorise on telnet server * by username and password specified in 'data'.
+ * Different telnet servers could have different responces for users,
+ * so we must specify string we are waiting for.
  *
  * @param   expected_login_responce
  *      The string we are waiting from the server,
