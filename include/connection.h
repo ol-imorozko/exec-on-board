@@ -25,4 +25,22 @@ extern int socket_connect(conn_info *info);
 extern int conn_info_fill(conn_info *ret, char *ip_addr,
                           int port, int sock_type);
 
+/** Get sock field from 'info' */
+static inline int get_sock(conn_info *info)
+{
+    return info->sock;
+}
+
+/** Get port field from 'info' */
+static inline int get_port(conn_info *info)
+{
+    return info->port;
+}
+
+/** Get addr field from 'info' */
+static inline char * get_addr(conn_info *info)
+{
+    return info->addr;
+}
+
 #endif
