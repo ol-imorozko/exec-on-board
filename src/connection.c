@@ -72,7 +72,7 @@ int socket_bind(conn_info *info)
  * @se
  *      Prints information about occurred error to stderr.
  */
-int conn_info_fill(conn_info *ret, char *ip_addr,
+int conn_info_fill(conn_info *ret, const char *ip_addr,
                    int port, int sock_type)
 {
     ret->sock = socket(AF_INET, sock_type, 0);

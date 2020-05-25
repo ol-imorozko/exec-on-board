@@ -13,17 +13,17 @@
 #include <stdint.h>
 
 typedef struct conn_info {
-    int         sock;
-    int         port;
-    char        *addr;
+    int               sock;
+    int               port;
+    const char        *addr;
 } conn_info;
 
 extern int socket_bind(conn_info *info);
 
 extern int socket_connect(conn_info *info);
 
-extern int conn_info_fill(conn_info *ret, char *ip_addr,
-                          int port, int sock_type);
+extern int conn_info_fill(conn_info *ret, const char *ip_addr,
+                          const int port, int sock_type);
 
 /** Get sock field from 'info' */
 static inline int get_sock(conn_info *info)
@@ -38,7 +38,7 @@ static inline int get_port(conn_info *info)
 }
 
 /** Get addr field from 'info' */
-static inline char * get_addr(conn_info *info)
+static inline const char * get_addr(conn_info *info)
 {
     return info->addr;
 }
