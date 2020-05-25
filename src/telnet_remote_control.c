@@ -130,7 +130,7 @@ static int telnet_send_str(telnet_auth_data *data, char *str)
 }
 
 /**
- * Authorise on telnet server * by username and password specified in 'data'.
+ * Authorise on telnet server by username and password specified in 'data'.
  * Different telnet servers could have different responces for users,
  * so we must specify string we are waiting for.
  *
@@ -197,7 +197,7 @@ int telnet_auth(telnet_auth_data *data,
 }
 
 /**
- * Execute command specified in 'data' on telnet server.
+ * Execute command 'command' on telnet server.
  *
  * @param   expected_responce
  *      String that server would send after successful execution.
