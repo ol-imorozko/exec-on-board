@@ -7,7 +7,6 @@
 
 #include "include/telnet_remote_control.h"
 
-#define TELNET_PORT         23
 #define MAX_RECV_BUFF_SIZE  10000
 #define TIMEOUT             3
 
@@ -17,24 +16,22 @@
  * @return
  *      Zero on success, or -1, if error occured.
  */
-int telnet_fill_auth_data(telnet_auth_data *ret, char *ip_addr,
-                          char *username, char *password)
+int telnet_fill_board_data(telnet_board_data *ret, telnet_auth_options *opt)
 {
     int retval;
 
-    retval = conn_info_fill(&ret->tcp_conn, ip_addr,
-                            TELNET_PORT, SOCK_STREAM);
+    retval = conn_info_fill(&ret->tcp_conn, opt->addr,
+                            atoi(opt->port), SOCK_STREAM);
     if (retval)
         return retval;
 
-    ret->username = username;
-    ret->password = password;
+    ret->opt = opt;
 
     return retval;
 }
 
 /**
- * Close socket for telnet_auth_data.
+ * Close socket for telnet_board_data.
  *
  * @return
  *      Zero on success, or -1, if error occured.
@@ -42,7 +39,7 @@ int telnet_fill_auth_data(telnet_auth_data *ret, char *ip_addr,
  * @se
  *      Prints information about occurred error to stderr.
  */
-int telnet_free_auth_data(telnet_auth_data *data)
+int telnet_free_board_data(telnet_board_data *data)
 {
     int retval;
     int s;
@@ -66,7 +63,8 @@ int telnet_free_auth_data(telnet_auth_data *data)
  * @se
  *      Prints information about occurred error to stderr.
  */
-static int telnet_recv_str(telnet_auth_data *data, char *expected, char *buff)
+static int telnet_recv_str(telnet_board_data *data,
+                           const char *expected, char *buff)
 {
     int retval;
     int offset;
@@ -112,7 +110,7 @@ static int telnet_recv_str(telnet_auth_data *data, char *expected, char *buff)
  * @se
  *      Prints information about occurred error to stderr.
  */
-static int telnet_send_str(telnet_auth_data *data, char *str)
+static int telnet_send_str(telnet_board_data *data, const char *str)
 {
     int retval;
     int s;
@@ -132,19 +130,7 @@ static int telnet_send_str(telnet_auth_data *data, char *str)
 /**
  * Authorise on telnet server by username and password specified in 'data'.
  * Different telnet servers could have different responces for users,
- * so we must specify string we are waiting for.
- *
- * @param   expected_login_responce
- *      The string we are waiting from the server,
- *      so we can enter username.
- *
- * @param   expected_password_responce
- *      The string we are waiting from the server,
- *      so we can enter password.
- *
- * @param   expected_auth_responce
- *      The string we are waiting from the server
- *      after successful authentication.
+ * so we must also specify string we are waiting for.
  *
  * @return
  *      Zero on success, or -1, if error occurred.
@@ -152,39 +138,36 @@ static int telnet_send_str(telnet_auth_data *data, char *str)
  * @se
  *      Prints information about occurred error to stderr.
  */
-int telnet_auth(telnet_auth_data *data,
-                char *expected_login_responce,
-                char *expected_password_responce,
-                char *expected_auth_responce)
+int telnet_auth(telnet_board_data *data)
 {
-    int retval;
+    int  retval;
     char recv_buff[MAX_RECV_BUFF_SIZE] = {0};
 
     retval = socket_connect(&data->tcp_conn);
     if (retval)
         return retval;
 
-    retval = telnet_recv_str(data, expected_login_responce, recv_buff);
+    retval = telnet_recv_str(data, data->opt->login_responce, recv_buff);
     if (retval)
         return retval;
 
     memset(recv_buff, 0, MAX_RECV_BUFF_SIZE);
 
-    retval = telnet_send_str(data, data->username);
+    retval = telnet_send_str(data, data->opt->username);
     if (retval)
         return retval;
 
-    retval = telnet_recv_str(data, expected_password_responce, recv_buff);
+    retval = telnet_recv_str(data, data->opt->password_responce, recv_buff);
     if (retval)
         return retval;
 
     memset(recv_buff, 0, MAX_RECV_BUFF_SIZE);
 
-    retval = telnet_send_str(data, data->password);
+    retval = telnet_send_str(data, data->opt->password);
     if (retval)
         return retval;
 
-    retval = telnet_recv_str(data, expected_auth_responce, recv_buff);
+    retval = telnet_recv_str(data, data->opt->cl_prompt, recv_buff);
     if (retval)
     {
         fprintf(stderr, "Error occured. Telnet output:\n"
@@ -197,13 +180,7 @@ int telnet_auth(telnet_auth_data *data,
 }
 
 /**
- * Execute command 'command' on telnet server.
- *
- * @param   expected_responce
- *      String that server would send after successful execution.
- *
- * @param   error_substr
- *      String that server would send if an error occured.
+ * Execute command specified in 'cmd_data' on telnet server.
  *
  * @return
  *      Zero on success, or -1, if error occurred.
@@ -211,22 +188,20 @@ int telnet_auth(telnet_auth_data *data,
  * @se
  *      Prints information about occurred error to stderr.
  */
-int telnet_execute_command(telnet_auth_data *data,
-                           char *command, char *expected_responce,
-                           char *error_substr)
+int telnet_execute_command(telnet_board_data *data, telnet_cmd_data *cmd_data)
 {
     int  retval;
     char recv_buff[MAX_RECV_BUFF_SIZE] = {0};
 
-    retval = telnet_send_str(data, command);
+    retval = telnet_send_str(data, cmd_data->command);
     if (retval)
         return retval;
 
-    retval = telnet_recv_str(data, expected_responce, recv_buff);
+    retval = telnet_recv_str(data, data->opt->cl_prompt, recv_buff);
     if (retval)
         return retval;
 
-    if (strstr(recv_buff, error_substr))
+    if (strstr(recv_buff, cmd_data->error_substr))
     {
         fprintf(stderr, "Error occured. Telnet output:\n"
                         "----------------------------------\n%s\n"

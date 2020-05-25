@@ -14,25 +14,38 @@
 
 #include "connection.h"
 
-typedef struct telnet_auth_data {
-    conn_info       tcp_conn;
-    char            *recv_buff;
-    char            *username;
-    char            *password;
-    char            *exec_cmd;
-} telnet_auth_data;
+typedef struct telnet_auth_options {
+    const char            *addr;
+    const char            *port;
+    const char            *username;
+    const char            *password;
+    const char            *login_responce;
+    /* The string we are waiting from the server, so we can enter username. */
+    const char            *password_responce;
+    /* The string we are waiting from the server, so we can enter password. */
+    const char            *cl_prompt;
+    /* The string that server would send as command line prompt.            */
+} telnet_auth_options;
 
-extern int telnet_fill_auth_data(telnet_auth_data *ret, char *ip_addr,
-                                 char *username, char *password);
+typedef struct telnet_cmd_data {
+    const char            *command;
+    const char            *error_substr; /* The substring that expected to be
+                                          * in the server responce if an error
+                                          * occures.  */
+} telnet_cmd_data;
 
-extern int telnet_free_auth_data(telnet_auth_data *data);
+typedef struct telnet_board_data {
+    conn_info             tcp_conn;
+    telnet_auth_options   *opt;
+} telnet_board_data;
 
-extern int telnet_auth(telnet_auth_data *data,
-                       char *expected_login_responce,
-                       char *expected_password_responce,
-                       char *expected_auth_responce);
+extern int telnet_fill_board_data(telnet_board_data *ret,
+                                  telnet_auth_options *opt);
 
-extern int telnet_execute_command(telnet_auth_data *data,
-                                  char *command, char *expected_responce,
-                                  char *error_substr);
+extern int telnet_free_board_data(telnet_board_data *data);
+
+extern int telnet_auth(telnet_board_data *data);
+
+extern int telnet_execute_command(telnet_board_data *data,
+                                  telnet_cmd_data *cmd_data);
 #endif
