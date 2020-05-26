@@ -4,6 +4,11 @@
 
 #include "include/args_check.h"
 
+#define IPV4_ALEN 4
+
+#define ip_oktet_range_check(ip_oktet) \
+    ((ip_oktet >= 0) && (ip_oktet <= 255))
+
 /* TODO: get this values from program conf file */
 static int  possible_types_count = 1;
 static char *possible_types[] = {"IAD731"};

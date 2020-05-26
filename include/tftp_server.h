@@ -14,6 +14,8 @@
 #ifndef _TFTP_SERVER_
 #define _TFTP_SERVER_
 
+#include <signal.h>
+
 #include "connection.h"
 
 typedef struct tftp_server_data {

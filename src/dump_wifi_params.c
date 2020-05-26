@@ -3,7 +3,6 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdint.h>
-#include <signal.h>
 #include <sys/wait.h>
 
 #include <unistd.h>
@@ -11,22 +10,6 @@
 #include "include/args_check.h"
 #include "include/telnet_remote_control.h"
 #include "include/tftp_server.h"
-
-static telnet_auth_options tmp_telnet_opts = {
-    .addr               = "192.168.1.1",
-    .port               = "23",
-    .username           = "admin",
-    .password           = "admin",
-    .login_responce     = "login:",
-    .password_responce  = "Password:",
-    .cl_prompt          = "root@ugwcpe:~#",
-};
-
-static tftp_server_options tmp_tftp_opts = {
-    .addr               = "192.168.1.3",
-    .port               = "12345",
-    .base_directory     = ".",
-};
 
 static telnet_cmd_data tmp_get_backup_cmd = {
     .command            = "tftp -g -l sample_file 192.168.1.3 12345",
@@ -38,19 +21,21 @@ int main(int argc, char **argv)
     int                 retval;
     int                 tftp_server_pid;
     int                 tftp_server_status;
+    tftp_server_data    tftp_server_data;
     telnet_board_data   board_control_data;
-    tftp_server_data    srv_data;
 
     /* Don't want argv[0] which represents name of the program */
     retval = args_check(argc - 1, argv + 1);
     if (retval)
         return retval;
 
-    retval = tftp_fill_server_data(&srv_data, &tmp_tftp_opts);
+    retval = tftp_fill_server_data(&tftp_server_data,
+                                   &global_opt.tftp_opt);
     if (retval)
         return retval;
 
-    retval = telnet_fill_board_data(&board_control_data, &tmp_telnet_opts);
+    retval = telnet_fill_board_data(&board_control_data,
+                                    &global_opt.telnet_opt);
     if (retval)
         return retval;
 
@@ -62,7 +47,7 @@ int main(int argc, char **argv)
             perror("dump_wifi_params: fork()");
             goto cleanup;
         case 0:
-            retval = tftp_server_start(&srv_data);
+            retval = tftp_server_start(&tftp_server_data);
             exit(retval ? EXIT_FAILURE : EXIT_SUCCESS);
         default:
             retval = telnet_auth(&board_control_data);
