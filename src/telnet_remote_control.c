@@ -102,7 +102,7 @@ static int telnet_recv_str(telnet_board_data *data,
 }
 
 /**
- * Send string 'str' to telnet server.
+ * Send string 'str' followed by CR to telnet server.
  *
  * @return
  *      Zero on success, or -1, if error occurred.
@@ -118,6 +118,13 @@ static int telnet_send_str(telnet_board_data *data, const char *str)
     s = get_sock(&data->tcp_conn);
 
     retval = send(s, str, strlen(str), 0);
+    if (retval == -1)
+    {
+        perror("telnet: send()");
+        return retval;
+    }
+
+    retval = send(s, "\r", 1, 0);
     if (retval == -1)
     {
         perror("telnet: send()");
