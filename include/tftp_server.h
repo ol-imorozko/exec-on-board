@@ -17,12 +17,18 @@
 #include "connection.h"
 
 typedef struct tftp_server_data {
-    conn_info   udp_conn;
-    char        *base_directory;
+    conn_info         udp_conn;
+    const char        *base_directory;
 } tftp_server_data;
 
-extern int tftp_fill_server_data(tftp_server_data *ret, char *ip_addr,
-                                 int port, char *base_directory);
+typedef struct tftp_server_options {
+    const char        *addr;
+    const char        *port;
+    const char        *base_directory;
+} tftp_server_options;
+
+extern int tftp_fill_server_data(tftp_server_data *ret,
+                                 tftp_server_options *opt);
 
 extern int tftp_server_start(tftp_server_data *srv_data);
 

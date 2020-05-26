@@ -89,16 +89,16 @@ void chld_handler()
  * @return
  *      Zero on success, or -1, if error occured.
  */
-int tftp_fill_server_data(tftp_server_data *ret, char *ip_addr,
-                          int port, char *base_directory)
+int tftp_fill_server_data(tftp_server_data *ret, tftp_server_options *opt)
 {
     int retval;
 
-    retval = conn_info_fill(&ret->udp_conn, ip_addr, port, SOCK_DGRAM);
+    retval = conn_info_fill(&ret->udp_conn, opt->addr,
+                            atoi(opt->port), SOCK_DGRAM);
     if (retval)
         return retval;
 
-    ret->base_directory = base_directory;
+    ret->base_directory = opt->base_directory;
 
     return retval;
 }
@@ -279,7 +279,7 @@ static int tftp_socket_create(void)
  *      the only acceptable way is the way when filename starts
  *      with fill path to the base directory.
  */
-static int filename_check(char *filename, char *base_directory)
+static int filename_check(char *filename, const char *base_directory)
 {
     int first_check;
     int second_check;
@@ -304,7 +304,7 @@ static int filename_check(char *filename, char *base_directory)
  *      occured error, or NULL otherwise.
  */
 static char* tftp_get_request_data(uint16_t *opcode, char **filename,
-                                   int *mode, char *base_directory,
+                                   int *mode, const char *base_directory,
                                    tftp_message *msg, ssize_t msg_len)
 {
     char *request_last_byte;
@@ -544,7 +544,7 @@ static char* tftp_handle_write_request(int s, FILE *fd,
  *      cause process termination.
  */
 void tftp_handle_request(tftp_message *msg, ssize_t msg_len,
-                         char *base_directory,
+                         const char *base_directory,
                          struct sockaddr_in *client_sock,
                          socklen_t slen)
 {

@@ -22,6 +22,12 @@ static telnet_auth_options tmp_telnet_opts = {
     .cl_prompt          = "root@ugwcpe:~#",
 };
 
+static tftp_server_options tmp_tftp_opts = {
+    .addr               = "192.168.1.3",
+    .port               = "12345",
+    .base_directory     = ".",
+};
+
 static telnet_cmd_data tmp_get_backup_cmd = {
     .command            = "tftp -g -l sample_file 192.168.1.3 12345",
     .error_substr       = "tftp:",
@@ -40,7 +46,7 @@ int main(int argc, char **argv)
     if (retval)
         return retval;
 
-    retval = tftp_fill_server_data(&srv_data, "192.168.1.3", 12345, ".");
+    retval = tftp_fill_server_data(&srv_data, &tmp_tftp_opts);
     if (retval)
         return retval;
 
