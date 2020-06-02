@@ -26,7 +26,7 @@ typedef struct tftp_server_data {
 typedef struct tftp_server_options {
     const char        *addr;
     const char        *port;
-    const char        *base_directory;
+    const char        *dir;
 } tftp_server_options;
 
 extern int tftp_fill_server_data(tftp_server_data *ret,

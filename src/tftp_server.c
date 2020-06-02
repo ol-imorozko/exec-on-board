@@ -98,7 +98,7 @@ int tftp_fill_server_data(tftp_server_data *ret, tftp_server_options *opt)
     if (retval)
         return retval;
 
-    ret->base_directory = opt->base_directory;
+    ret->base_directory = opt->dir;
 
     return retval;
 }
