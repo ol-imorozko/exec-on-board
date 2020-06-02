@@ -136,7 +136,7 @@ static int telnet_send_str(telnet_board_data *data, const char *str)
 
 /**
  * Authorise on telnet server by username and password specified in 'data'.
- * Different telnet servers could have different responces for users,
+ * Different telnet servers could have different prompts for users,
  * so we must also specify string we are waiting for.
  *
  * @return
@@ -154,7 +154,7 @@ int telnet_auth(telnet_board_data *data)
     if (retval)
         return retval;
 
-    retval = telnet_recv_str(data, data->opt->login_responce, recv_buff);
+    retval = telnet_recv_str(data, data->opt->login_prompt, recv_buff);
     if (retval)
         return retval;
 
@@ -164,7 +164,7 @@ int telnet_auth(telnet_board_data *data)
     if (retval)
         return retval;
 
-    retval = telnet_recv_str(data, data->opt->password_responce, recv_buff);
+    retval = telnet_recv_str(data, data->opt->password_prompt, recv_buff);
     if (retval)
         return retval;
 

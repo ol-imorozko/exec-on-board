@@ -19,9 +19,9 @@ typedef struct telnet_auth_options {
     const char            *port;
     const char            *username;
     const char            *password;
-    const char            *login_responce;
+    const char            *login_prompt;
     /* The string we are waiting from the server, so we can enter username. */
-    const char            *password_responce;
+    const char            *password_prompt;
     /* The string we are waiting from the server, so we can enter password. */
     const char            *cl_prompt;
     /* The string that server would send as command line prompt.            */
