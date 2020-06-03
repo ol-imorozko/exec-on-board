@@ -1,141 +1,258 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <getopt.h>
+#include <getopt.h>
+#include <regex.h>
 
 #include "include/args_check.h"
 
-#define IPV4_ALEN 4
+/* Default options. */
+#define STD_FLAGS                0
+#define STD_BOARD_ADDR           "192.168.1.1"
+#define STD_TELNET_PORT          "23"
+#define STD_USERNAME             "admin"
+#define STD_PASSWORD             "admin"
+#define STD_LOGIN_PROMPT         "login:"
+#define STD_PASSWORD_PROMPT      "Password:"
+#define STD_CL_PROMPT            "root@rtr:~#"
+#define STD_HOST_ADDR            "192.168.1.3"
+#define STD_TFTP_PORT            "12345"
+#define STD_TFTP_DIRECTORY       "."
 
-#define ip_oktet_range_check(ip_oktet) \
-    ((ip_oktet >= 0) && (ip_oktet <= 255))
+/* options which don't have a one-char version */
+#define OPT_TFTP_DIR             256
+#define OPT_CL_PROMPT            257
+#define OPT_LOGIN_PROMPT         258
+#define OPT_PWD_PROMPT           259
 
-/* TODO: get this values from program conf file */
-static int  possible_types_count = 1;
-static char *possible_types[] = {"IAD731"};
+#define STD_A_ARG_VALUE          "\""STD_BOARD_ADDR":"STD_TELNET_PORT"\""
+#define STD_T_ARG_VALUE          "\""STD_HOST_ADDR":"STD_TFTP_PORT"\""
 
-/** Print possible board type names. */
-static void possible_types_print(void)
+#define OPTSTRING                ":hqp:u:t:a:P:"
+
+dump_params_options global_opt;
+
+static struct option long_opts[] =
 {
-    int i;
+    {"help",         no_argument,       0, 'h'},
+    {"quiet",        no_argument,       0, 'q'},
+    {"password",     required_argument, 0, 'p'},
+    {"username",     required_argument, 0, 'u'},
+    {"addr",         required_argument, 0, 'a'},
+    {"tftp-addr",    required_argument, 0, 't'},
+    {"tftp-dir",     required_argument, 0,  OPT_TFTP_DIR},
+    {"cl-prompt",    required_argument, 0,  OPT_CL_PROMPT},
+    {"login-prompt", required_argument, 0,  OPT_LOGIN_PROMPT},
+    {"pwd-prompt",   required_argument, 0,  OPT_PWD_PROMPT},
+    {0, 0, 0, 0}
+};
 
-    for (i = 0; i < possible_types_count; i++)
-        printf("%d) %s\n", i + 1, possible_types[i]);
-}
+static struct {
+  int          opt;
+  char * const flagdesc;
+  char * const desc;
+  char * const arg;
+} usage[] = {
+  { 'h', NULL,                 "Display this message.",                                          NULL },
+  { 'q', NULL,                 "Produce no output.",                                             NULL },
+  { 'u', "<username>",         "Specify username for telnet server. Default value is %s.",   "\""STD_USERNAME"\"" },
+  { 'p', "<password>",         "Specify password for telnet server. Default value is %s.",   "\""STD_PASSWORD"\"" },
+  { 'a', "<[ipaddr][:port]>",  "Specify board address and telnet port. Default value is %s.",    STD_A_ARG_VALUE },
+  { 't', "<[ipaddr][:port]>",  "Specify address and port for tftp server. Default value is %s.", STD_T_ARG_VALUE },
+  { OPT_TFTP_DIR,     "<dir>", "Specify directory for tftp server. Default value is %s.",    "\""STD_TFTP_DIRECTORY"\"" },
+  { OPT_CL_PROMPT,    "<str>", "Specify command line prompt. Default value is %s.",          "\""STD_CL_PROMPT"\"" },
+  { OPT_LOGIN_PROMPT, "<str>", "Specify login prompt. Default value is %s.",                 "\""STD_LOGIN_PROMPT"\"" },
+  { OPT_PWD_PROMPT,   "<str>", "Specify password prompt. Default value is %s.",              "\""STD_PASSWORD_PROMPT"\"" },
+  { 0, NULL, NULL, NULL }
+};
 
-/**
- * Print usage for dump_wifi_params.
- *
- * @todo
- *      Print something about manual/wlan/ugw/ folder.
- */
 static void usage_print(void)
 {
-    printf("Usage: ./dump_wifi_params [help|type] "
-           "[ipaddr] [pwd]\n");
-
-    printf("help   - print this message\n"
-           "type   - board type\n"
-           "ipaddr - ip address of boad WAN in v4 format (optional)\n"
-           "pwd    - root password (optional)\n");
+    printf("Usage: ./dump_wifi_params [options]\n");
+    printf("To see all possible options use ./dump_wifi_params -h\n");
 }
 
-/**
- * Check if board type is correct.
- *
- * @return
- *      Zero on success, or -1, if error occurred.
- */
-static int board_type_check(char *board_type)
+static void opts_print(void)
 {
-    int i;
+    char buff[100];
+    int i, j;
 
-    for (i = 0; i < possible_types_count; i++)
+    for (i = 0; usage[i].opt != 0; i++)
     {
-        if (!strcmp(board_type, possible_types[i]))
-            return 0;
-    }
+        char *desc = usage[i].flagdesc;
+        char *eq   = "=";
 
-    return -1;
-}
+        if (!desc || *desc == '[')
+            eq = "";
 
-/**
- * Check if ipv4 address is correct.
- *
- * @return
- *      Zero on success, or -1, if error occurred.
- */
-static int ipv4_check(char *ip)
-{
-    int i;
-    int ip_oktet[IPV4_ALEN];
-    char *suffix;
+        if (!desc)
+            desc = "";
 
-    ip_oktet[0] = strtol(ip, &suffix, 10);
-    /* 10 - base */
+        for (j = 0; long_opts[j].name; j++)
+            if (long_opts[j].val == usage[i].opt)
+                break;
 
-    if(!ip_oktet_range_check(ip_oktet[0]) || *suffix != '.')
-        return -1;
-
-    for(i = 1; i < IPV4_ALEN; i++)
-    {
-        /* + 1 cause of one dot */
-        if(i == IPV4_ALEN - 1)
-        {
-            ip_oktet[i] = strtol(suffix + 1, &suffix, 10);
-            if(!ip_oktet_range_check(ip_oktet[i]) || strlen(suffix) != 0)
-                return -1;
-        }
+        if (usage[i].opt < 256)
+            sprintf(buff, "-%c, ", usage[i].opt);
         else
-        {
-            ip_oktet[i] = strtol(suffix + 1, &suffix, 10);
-            if(!ip_oktet_range_check(ip_oktet[i]) || *suffix != '.')
-                return -1;
-        }
-    }
+            sprintf(buff, "    ");
 
-    return 0;
+        sprintf(buff + 4, "--%s%s%s", long_opts[j].name, eq, desc);
+        printf("%-55.55s", buff);
+
+        if (usage[i].arg)
+            strcpy(buff, usage[i].arg);
+
+        printf(usage[i].desc, buff);
+        printf("\n");
+    }
+}
+
+static void set_defaults(void)
+{
+    global_opt.flags                           = STD_FLAGS;
+    global_opt.telnet_opt.addr                 = STD_BOARD_ADDR;
+    global_opt.telnet_opt.port                 = STD_TELNET_PORT;
+    global_opt.telnet_opt.username             = STD_USERNAME;
+    global_opt.telnet_opt.password             = STD_PASSWORD;
+    global_opt.telnet_opt.login_prompt         = STD_LOGIN_PROMPT;
+    global_opt.telnet_opt.password_prompt      = STD_PASSWORD_PROMPT;
+    global_opt.telnet_opt.cl_prompt            = STD_CL_PROMPT;
+    global_opt.tftp_opt.addr                   = STD_HOST_ADDR;
+    global_opt.tftp_opt.port                   = STD_TFTP_PORT;
+    global_opt.tftp_opt.dir                    = STD_TFTP_DIRECTORY;
+}
+
+/*
+ * Find next symbol 'c', split string with zero and eliminate spaces.
+ *
+ * @return
+ *     Start of string following 'c'.
+ */
+static char *split_chr(char *s, char c)
+{
+    char *symb, *p;
+
+    if (!s || !(symb = strchr(s, c)))
+        return NULL;
+
+    p = symb;
+    *symb = ' ';
+
+    for (; *symb == ' '; symb++);
+
+    for (; (p >= s) && *p == ' '; p--)
+        *p = 0;
+
+    return symb;
+}
+
+/* Fill global_opt.tftp_opt with options from optarg.  */
+static void opts_parse_tftp(void)
+{
+    char *addr;
+    char *port;
+
+    port = split_chr(optarg, ':');
+    addr = optarg;
+
+    if (addr && *addr != '\0')
+        global_opt.tftp_opt.addr = addr;
+
+    if (port && *port != '\0')
+        global_opt.tftp_opt.port = port;
+}
+
+/* Fill global_opt.telnet_opt with options from optarg.  */
+static void opts_parse_telnet(void)
+{
+    char *addr;
+    char *port;
+
+    port = split_chr(optarg, ':');
+    addr = optarg;
+
+    if (addr && *addr != '\0')
+        global_opt.telnet_opt.addr = addr;
+
+    if (port && *port != '\0')
+        global_opt.telnet_opt.port = port;
 }
 
 /**
- * Check if arguments passed to dump_wifi_params are valid.
+ * Fill global_opt structure with options from command line.
  *
  * @return
  *      Zero on success, or -1, if error occurred.
  *
  * @se
  *      Prints information about occurred error to stderr.
- *
- * @todo
- *      Add whitespace support in password?
  */
-int args_check(int args_count, char **args)
+int options_get(int argc, char **argv)
 {
-    int retval = 0;
+    int opt;
+    int opt_index;
 
-    if (args_count == 0 || args_count == 2 || args_count > 3 ||
-       (args_count == 1 && !strcmp(args[0], "help")))
+    set_defaults();
+
+    while(1)
     {
-        usage_print();
-        return -1;
+        opt = getopt_long(argc, argv, OPTSTRING, long_opts, &opt_index);
+
+        if(opt == -1)
+            break;
+
+        switch(opt)
+        {
+            case 'h':
+                opts_print();
+                return -1;
+            case 'a':
+                opts_parse_telnet();
+                break;
+            case 't':
+                opts_parse_tftp();
+                break;
+            case 'q':
+                global_opt.flags |= FLAG_QUIET;
+                break;
+            case 'u':
+                global_opt.telnet_opt.username = optarg;
+                break;
+            case 'p':
+                global_opt.telnet_opt.password = optarg;
+                break;
+            case OPT_TFTP_DIR:
+                global_opt.tftp_opt.dir = optarg;
+                break;
+            case OPT_CL_PROMPT:
+                global_opt.telnet_opt.cl_prompt = optarg;
+                break;
+            case OPT_LOGIN_PROMPT:
+                global_opt.telnet_opt.login_prompt = optarg;
+                break;
+            case OPT_PWD_PROMPT:
+                global_opt.telnet_opt.password_prompt = optarg;
+                break;
+            case ':':
+                fprintf(stderr, "Option -%c requires an argument.\n", optopt);
+                goto abort;
+            case '?':
+                fprintf(stderr, "Unknown option: %c\n", optopt);
+                goto abort;
+        }
     }
 
-    retval = board_type_check(args[0]);
-    if (retval)
+    if (optind > argc)
     {
-        printf("Wrong board type. Possible types are:\n");
-        possible_types_print();
-        return retval;
+        fprintf(stderr, "Too much arguments.\n");
+        goto abort;
     }
 
-    if (args_count == 1)
-        return retval;
+    return 0;
 
-    retval = ipv4_check(args[1]);
-    if (retval)
-    {
-        printf("Wrong ip format.\n");
-        return retval;
-    }
-
-    return retval;
+abort:
+    usage_print();
+    return -1;
 }

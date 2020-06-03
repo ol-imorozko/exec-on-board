@@ -16,6 +16,8 @@ static telnet_cmd_data tmp_get_backup_cmd = {
     .error_substr       = "tftp:",
 };
 
+extern dump_params_options global_opt;
+
 int main(int argc, char **argv)
 {
     int                 retval;
@@ -24,8 +26,7 @@ int main(int argc, char **argv)
     tftp_server_data    tftp_server_data;
     telnet_board_data   board_control_data;
 
-    /* Don't want argv[0] which represents name of the program */
-    retval = args_check(argc - 1, argv + 1);
+    retval = options_get(argc, argv);
     if (retval)
         return retval;
 
