@@ -4,7 +4,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <sys/wait.h>
-
 #include <unistd.h>
 
 #include "include/args_check.h"
@@ -41,12 +40,14 @@ int main(int argc, char **argv)
         return retval;
 
     tftp_server_pid = fork();
+    retval = tftp_server_pid;
 
     switch(tftp_server_pid)
     {
         case -1:
             perror("dump_wifi_params: fork()");
-            goto cleanup;
+            telnet_free_board_data(&board_control_data);
+            return retval;
         case 0:
             retval = tftp_server_start(&tftp_server_data);
             exit(retval ? EXIT_FAILURE : EXIT_SUCCESS);
@@ -60,10 +61,7 @@ int main(int argc, char **argv)
             if (retval)
                 goto cleanup;
 
-            telnet_free_board_data(&board_control_data);
-            tftp_server_stop(tftp_server_pid);
-            wait(&tftp_server_status);
-            return retval;
+            goto cleanup;
     }
 
 cleanup:
