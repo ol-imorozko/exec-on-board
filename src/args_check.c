@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
-#include <getopt.h>
 #include <regex.h>
 
 #include "include/args_check.h"
