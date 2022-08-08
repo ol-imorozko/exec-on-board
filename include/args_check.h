@@ -1,5 +1,5 @@
 /** @file
- * @brief Arguments checking for dump_wifi_params tool.
+ * @brief Arguments checking for exec_on_board tool.
  *
  * @author Ivan Morozko <Ivan.Morozko@oktetlabs.ru>
  *
@@ -14,11 +14,11 @@
 
 #define FLAG_QUIET               1
 
-typedef struct dump_params_options {
+typedef struct exec_on_board_options {
     int                     flags;
     telnet_auth_options     telnet_opt;
     tftp_server_options     tftp_opt;
-} dump_params_options;
+} exec_on_board_options;
 
 extern int options_get(int argc, char **argv);
 

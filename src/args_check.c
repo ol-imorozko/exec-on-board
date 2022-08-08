@@ -30,7 +30,7 @@
 
 #define OPTSTRING                ":hqp:u:t:a:P:"
 
-dump_params_options global_opt;
+exec_on_board_options global_opt;
 
 static struct option long_opts[] =
 {
@@ -68,8 +68,8 @@ static struct {
 
 static void usage_print(void)
 {
-    printf("Usage: ./dump_wifi_params [options]\n");
-    printf("To see all possible options use ./dump_wifi_params -h\n");
+    printf("Usage: ./exec_on_board [options]\n");
+    printf("To see all possible options use ./exec_on_board -h\n");
 }
 
 static void opts_print(void)

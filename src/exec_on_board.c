@@ -15,7 +15,7 @@ static telnet_cmd_data tmp_get_backup_cmd = {
     .error_substr       = "tftp:",
 };
 
-extern dump_params_options global_opt;
+extern exec_on_board_options global_opt;
 
 int main(int argc, char **argv)
 {
@@ -45,7 +45,7 @@ int main(int argc, char **argv)
     switch(tftp_server_pid)
     {
         case -1:
-            perror("dump_wifi_params: fork()");
+            perror("fork()");
             telnet_free_board_data(&board_control_data);
             return retval;
         case 0:

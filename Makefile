@@ -1,4 +1,4 @@
-TARGET   = dump_wifi_params
+TARGET   = exec_on_board
 
 CC       = gcc
 CFLAGS   = -Wall -Wextra -I.
